@@ -17,203 +17,160 @@ clear all
 close all
 clc
 
+ft_defaults;
 %% 1. Define Data in Folder
-inpath{1} = '/Plattwurm/preproc/mltot/'; % Erster Datensatz
-inpath{2} = '/Plattwurm/preproc/leer/'; % Zweiter Datensatz
-outpath = '/Plattwurm/Output/';
+inpath{1} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/01_Dunkel/'; 
+inpath{2} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/02_Hell/'; 
+inpath{3} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/03_Mllebend/'; 
+inpath{4} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/04_Mltot/'; 
 
-nposfirst = find((inpath{1} == '/')==1)
-firstn = inpath{1}((nposfirst(length(nposfirst)-1)+1):(nposfirst(length(nposfirst))-1))
-npossecond = find((inpath{2} == '/')==1)
-secondn = inpath{2}((npossecond(length(npossecond)-1)+1):(npossecond(length(npossecond))-1))
+outpath = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/05_Output/';
 
-tblnamefirst = strcat(firstn, '.csv');
-tblnamesecond = strcat(secondn, '.csv');
+for p = 1:length(inpath)
+    folders = find((inpath{p} == '/'));
+    names{p} = [inpath{p}(folders(end-1)+1:folders(end)-1),'.csv'];
+end
 
-%% 2. Loop Data
-
-% 2.1. Light
-p = 1; % Light
-clear indat
-indat = dir([inpath{p},'*.mat']);
-% 2.1.1. Read in
-light_doc = {1;1};
-for v = 1:length(indat)
-    tmp = load([inpath{p},indat(v).name],'data_fft');
-    light_fft{1} = 1;
-    light_exp(1) = 1;
-    if length(tmp.data_fft.label) == 1  % Wenn nur ein Kanal: Alles in Ordnung
-        light_fft{length(light_fft)+1} = tmp.data_fft;
-        tmp2 = load([inpath{p},indat(v).name],'data_expo');
-        light_exp(length(light_exp)+1) = tmp2.data_expo;
-        light_doc(1,length(light_fft)) = {indat(v).name};
-        light_doc(2,length(light_fft)) = tmp.data_fft.label;
-    else % Wenn mehr als ein Kanal: Jeder Kanal wird als eigener Wurm behandelt
-        for j = 1:length(tmp.data_fft.label)
-        tmp2 = tmp;
-        tmp2.data_fft.label = tmp.data_fft.label(j);
-        tmp2.data_fft.powspctrm = tmp.data_fft.powspctrm(j,1:length(tmp.data_fft.powspctrm));
-        light_fft{length(light_fft)+1} = tmp2.data_fft;
-        tmp3 = load([inpath{p},indat(v).name],'data_expo');
-        light_exp(length(light_exp)+1) = tmp3.data_expo(j);
-        light_doc(1,length(light_fft)) = {indat(v).name};
-        light_doc{2,length(light_fft)} = tmp.data_fft.label(j);
+%% 2. Loop Data to collect single recordings
+cond = cell(1,4);
+for p = 1:length(inpath)
+    indat = dir([inpath{p},'*.mat']);
+    cond{p} = cell(1,1);
+    for v = 1:length(indat)
+        load([inpath{p},indat(v).name]);
+        for c = 1:length(data_fft.label)
+            cond{p}{v,c}.name = indat(v).name(1:end-8);
+            cond{p}{v,c}.label = {'Fp1'};
+            cond{p}{v,c}.dimord = 'chan_freq';
+            cond{p}{v,c}.freq = data_fft.freq;
+            cond{p}{v,c}.powspctrm = squeeze(data_fft.powspctrm(c,:));
+            cond{p}{v,c}.exponent = data_expo(c);
         end
     end
+    cond{p} = reshape(cond{p},[1, numel(cond{p})]);
+    cond{p} = cond{p}(~cellfun('isempty',cond{p}));
 end
 
-% Clean up
-light_fft = light_fft(2:length(light_fft));
-light_exp = light_exp(2:length(light_exp));
-light_doc = light_doc(1:2,2:length(light_doc));
+%% 3. Group Average
+for p = 1:length(cond)
+    cfg = [];
+    cfg.keepindividual = 'no';
 
-
-% Renaming for Group average
-channelname = {'Fp1'};
-for i = 1:length(light_fft)
-    light_fft{i}.label = channelname;
+    GA{p} = ft_freqgrandaverage(cfg,cond{p}{:});
 end
 
-% 2.1.2. Group Average
-cfg = [];
-cfg.keepindividual = 'yes';
-
-light_GA = ft_freqgrandaverage(cfg,light_fft{:});
-
-% 2.1.3. Write CSV
-    % 2.1.3.1. Make Table
-    clear tbl
-    tbl = array2table(squeeze(light_GA.powspctrm));
-
-    % 2.1.3.2. Prepare Column Names = Frequencies
-    colNames = {};
-    for c = 1:length(light_GA.freq)
-        tmp = num2str(light_GA.freq(c));
-        tmp = replace(tmp,'.','_');
-        colNames{c} = tmp;
-    end
-
-    % 2.1.3.3. Add Column Names
-    for v = 1:size(tbl,2)
-        tbl.Properties.VariableNames{v} = ['f_',colNames{v}];
-    end
-
-    % 2.1.3.4. Add Row Names = Dataset Names
-    for v = 1:size(tbl,1)
-        tmpname = char(light_doc(1,v));
-        tmpname = tmpname(find(tmpname~='_'));
-        tmpname2 = char(light_doc{2,v}(1));
-        tmpname_final = strcat(tmpname(1:(length(tmpname)-8)),tmpname2);
-        tbl.Properties.RowNames{v} = tmpname_final;
-    end
-
-    % 2.1.3.5 Now save it 
-    cd(outpath);
-    writetable(tbl,tblnamefirst,'WriteVariableNames',1,'WriteRowNames',1);
-    
-% 2.2. Dark
-p = 2; % Dark
-clear indat
-indat = dir([inpath{p},'*.mat']);
-% 2.2.1.
-dark_doc = {1;1};
-for v = 1:length(indat)
-    tmp = load([inpath{p},indat(v).name],'data_fft');
-    dark_fft{1} = 1;
-    dark_exp(1) = 1;
-    if length(tmp.data_fft.label) == 1  % Wenn nur ein Kanal: Alles in Ordnung
-        dark_fft{length(dark_fft)+1} = tmp.data_fft;
-        tmp2 = load([inpath{p},indat(v).name],'data_expo');
-        dark_exp(length(dark_exp)+1) = tmp2.data_expo;
-        dark_doc(1,length(dark_fft)) = {indat(v).name};
-        dark_doc(2,length(dark_fft)) = tmp.data_fft.label;
-    else % Wenn mehr als ein Kanal: Jeder Kanal wird als eigener Wurm behandelt
-        for j = 1:length(tmp.data_fft.label)
-        tmp2 = tmp;
-        tmp2.data_fft.label = tmp.data_fft.label(j);
-        tmp2.data_fft.powspctrm = tmp.data_fft.powspctrm(j,1:length(tmp.data_fft.powspctrm));
-        dark_fft{length(dark_fft)+1} = tmp2.data_fft;
-        tmp3 = load([inpath{p},indat(v).name],'data_expo');
-        dark_exp(length(dark_exp)+1) = tmp3.data_expo(j);
-        dark_doc(1,length(dark_fft)) = {indat(v).name};
-        dark_doc{2,length(dark_fft)} = tmp.data_fft.label(j);
-        end
-    end
-end
-
-% Clean up
-dark_fft = dark_fft(2:length(dark_fft));
-dark_exp = dark_exp(2:length(dark_exp));
-dark_doc = dark_doc(1:2,2:length(dark_doc));
-
-
-% 2.2.2.1 Renaming for Group Average
-for i = 1:length(dark_fft)
-    dark_fft{i}.label = channelname;
-end
-
-
-% 2.2.2.2 Actual Group Average
-cfg = [];
-cfg.keepindividual = 'yes';
-dark_GA = ft_freqgrandaverage(cfg,dark_fft{:});
-
-% 2.1.3. Write CSV
-    % 2.1.3.1. Make Table
-    clear tbl
-    tbl = array2table(squeeze(dark_GA.powspctrm));
-
-    % 2.1.3.2. Prepare Column Names = Frequencies
-    colNames = {};
-    for c = 1:length(dark_GA.freq)
-        tmp = num2str(dark_GA.freq(c));
-        tmp = replace(tmp,'.','_');
-        colNames{c} = tmp;
-    end
-
-    % 2.1.3.3. Add Column Names
-    for v = 1:size(tbl,2)
-        tbl.Properties.VariableNames{v} = ['f_',colNames{v}];
-    end
-
-    % 2.1.3.4. Add Row Names = Dataset Names
-    for v = 1:size(tbl,1)
-        tmpname = char(dark_doc(1,v));
-        tmpname = tmpname(find(tmpname~='_'));
-        tmpname2 = char(dark_doc{2,v}(1));
-        tmpname_final = strcat(tmpname(1:(length(tmpname)-8)),tmpname2);
-        tbl.Properties.RowNames{v} = tmpname_final;
-    end
-
-    % 2.1.3.5 Now save it 
-    cd(outpath);
-    writetable(tbl,tblnamesecond,'WriteVariableNames',1,'WriteRowNames',1);
-
-%% Stats
-
-% Compare the spectra
-cfg=[];
-cfg.method = 'montecarlo';
-cfg.statistic ='indepsamplesT';
-cfg.numrandomization = 1000;
-cfg.correctm = 'cluster';
-cfg.neighbours = [];
-cfg.alpha = 0.05;
-cfg.tail = 0;
-cfg.correcttail = 'alpha';
-cfg.ivar = 1;
-
-% % if cfg.statistic == 'depsamplesT'
-% cfg.design=[1:length(light_fft),1:length(dark_fft);ones(1,length(light_fft)),ones(1,length(dark_fft))*2];
-% cfg.uvar   = 1;
-% cfg.ivar   = 2;
-% % else
-cfg.design=[ones(1,length(light_fft)),ones(1,length(dark_fft))*2];
+% %% 4. Write CSV
+% for p = 1:length(GA)
+%     % 4.1. Make Table
+%     clear tbl
+%     tbl = array2table(squeeze(GA{p}.powspctrm));
+% 
+%     % 4.2. Prepare Column Names = Frequencies
+%     colNames = {};
+%     for c = 1:length(GA{p}.freq)
+%         tmp = num2str(GA{p}.freq(c));
+%         tmp = replace(tmp,'.','_');
+%         colNames{c} = ['f_',tmp];
+%     end
+%     tbl.Properties.VariableNames = colNames;
+% 
+%     % 4.3. Add Row Names = Dataset Names
+%     for v = 1:size(tbl,1)
+%         tbl.Properties.RowNames{v} = cond{p}{v}.name;
+%     end
+% 
+%     % 4.4 Now save it 
+%     cd(outpath);
+%     writetable(tbl,names{p},'WriteVariableNames',1,'WriteRowNames',1);
 % end
+%  
+%% 5. Stats
+    % 5.1 Define the Contrasts
+    contrasts = [1 2;... % 1 dunkel vs hell
+                 1 3;... % 2 dunkel vs mllebend
+                 1 4;... % 3 dunkel vs mltoto
+                 2 3;... % 4 hell vs mllebend
+                 2 4;... % 5 hell vs mltot
+                 3 4]; % 6 mllebend vs. mltot
 
-stats=ft_freqstatistics(cfg,light_fft{:},dark_fft{:})
+    % 5.2. Loop the conditions fro pairwise comparisons
+    for p = 1:length(contrasts)
+        % Compare the spectra
+        cfg=[];
+        cfg.method = 'montecarlo';
+        cfg.statistic ='indepsamplesT';
+        cfg.numrandomization = 10000;
+        cfg.correctm = 'fdr';
+        cfg.neighbours = [];
+        cfg.alpha = 0.01;
+        cfg.tail = 0;
+        cfg.correcttail = 'alpha';
+        cfg.ivar = 1;
 
-% Make a group plot
+        cfg.design=[ones(1,length(cond{contrasts(p,1)})),ones(1,length(cond{contrasts(p,2)}))*2];
+
+        pow_stats{p} = ft_freqstatistics(cfg,cond{contrasts(p,1)}{:},cond{contrasts(p,2)}{:});
+        
+        % 5.2.1 Test the exponents
+        clear exp1 exp2
+        for v = 1:length(cond{contrasts(p,1)})
+            exp1(v) = cond{contrasts(p,1)}{v}.exponent;
+        end
+        for v = 1:length(cond{contrasts(p,2)})
+            exp2(v) = cond{contrasts(p,2)}{v}.exponent;
+        end
+        
+        [H,P,CI,exp_stats{p}] = ttest2(exp1,exp2,'vartype','unequal');
+        exp_stats{p}.p = P;
+        exp_stats{p}.CI = CI;
+    end
+
+%% 6. Plots
+
+figure; 
+    % Dunkel   
+    loglog(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
+    hold on
+    
+    % Hell
+    loglog(GA{1}.freq,squeeze(mean(GA{2}.powspctrm,1)),'linewidth',3,'color',[0,0,1]);
+    
+    % Mltot
+    loglog(GA{1}.freq,squeeze(mean(GA{4}.powspctrm,1)),'linewidth',3,'color',[0 0 0]);
+    
+    plot(GA{1}.freq,pow_stats{1}.mask,'r*');
+
+xlim([GA{1}.freq(1) GA{1}.freq(end)]);
+
+
+figure; 
+    % Dunkel
+    loglog(GA{1}.freq,squeeze(GA{1}.powspctrm),'linewidth',1,'color',[1,0.5,0.5]);
+    hold on
+    loglog(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
+    
+    % Hell
+    loglog(GA{1}.freq,squeeze(GA{2}.powspctrm),'linewidth',1,'color',[0.5,0.5,1]);
+    hold on
+    loglog(GA{1}.freq,squeeze(mean(GA{2}.powspctrm,1)),'linewidth',3,'color',[0,0,1]);
+    
+    % Mllebend
+    loglog(GA{1}.freq,squeeze(GA{3}.powspctrm),'linewidth',1,'color',[0.5,1,0.5]);
+    hold on
+    loglog(GA{1}.freq,squeeze(mean(GA{3}.powspctrm,1)),'linewidth',3,'color',[0,1,0]);
+    
+    % Mltot
+    loglog(GA{1}.freq,squeeze(GA{4}.powspctrm),'linewidth',1,'color',[0.25,0.25,0.25]);
+    hold on
+    loglog(GA{1}.freq,squeeze(mean(GA{4}.powspctrm,1)),'linewidth',3,'color',[0 0 0]);
+
+xlim([GA{1}.freq(1) GA{1}.freq(end)]);
+
+
+plot(GA{1}.freq,squeeze(GA{1}.powspctrm),'linewidth',1,'color',[1,0.5,0.5]);
+hold on
+plot(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
+
 figure;
 loglog(light_GA.freq,mean(squeeze(light_GA.powspctrm)),'linewidth',3,'color',[1,0,0]);
 hold on
