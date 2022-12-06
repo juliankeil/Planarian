@@ -123,6 +123,8 @@ end
         [H,P,CI,exp_stats{p}] = ttest2(exp1,exp2,'vartype','unequal');
         exp_stats{p}.p = P;
         exp_stats{p}.CI = CI;
+        exp_stats{p}.means = [mean(exp1),mean(exp2)];
+        exp_stats{p}.stds = [std(exp1),std(exp2)];
     end
 
 %% 6. Plots
