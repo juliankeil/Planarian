@@ -33,10 +33,16 @@ outpath{2} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/Git
 outpath{3} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/03_Mllebend/'; 
 outpath{4} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/04_Mltot/'; 
 
-
+% inpath{1} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/01_Raw/05_HellDunkelHell/'; 
+% inpath{2} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/01_Raw/06_KLDunkel/'; 
+% inpath{3} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/01_Raw/07_KLHell/'; 
+% 
+% outpath{1} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/05_HellDunkelHell/'; 
+% outpath{2} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/06_KLDunkel/'; 
+% outpath{3} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/07_KLHell/'; 
 %% 2. Loop Data
 for p = 1:length(inpath)
-    % 2.1 Get the list of worms
+    %% 2.1 Get the list of worms
     indat = dir([inpath{p},'*.bdf']);
     
     % 2.2 Loop worms
@@ -82,6 +88,7 @@ for p = 1:length(inpath)
   
     %% 2.5. Automatic artefact removal
         % 2.5.1 Get mean within trials for peak threshold
+        clear mean_tmp mean_t
         for c = 1:length(data_psc.label)
             for t = 1:length(data_psc.trial)
                mean_tmp(c,t) = mean(data_psc.trial{t}(c,:));
@@ -121,6 +128,7 @@ for p = 1:length(inpath)
         data_fft = ft_freqanalysis(cfg, data_pscr);
 
         % Save the data
+        sprintf(indat(v).name)
         save([outpath{p},indat(v).name,'.mat'],'data_expo','data_fft','-V7.3');
 
         % Compute statistics

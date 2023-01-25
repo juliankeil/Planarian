@@ -23,8 +23,10 @@ inpath{1} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitH
 inpath{2} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/02_Hell/'; 
 inpath{3} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/03_Mllebend/'; 
 inpath{4} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/04_Mltot/'; 
+%inpath{5} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/06_KLDunkel/'; 
+%inpath{6} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/07_KLHell/';
 
-outpath = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/05_Output/';
+outpath = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/101_Output/';
 
 for p = 1:length(inpath)
     folders = find((inpath{p} == '/'));
@@ -91,7 +93,11 @@ end
                  1 4;... % 3 dunkel vs mltoto
                  2 3;... % 4 hell vs mllebend
                  2 4;... % 5 hell vs mltot
-                 3 4]; % 6 mllebend vs. mltot
+                 3 4;...% 6 mllebend vs. mltot
+                 %5 6;... % 7 Kopflos dunkel vs. kopflos hell
+                 %1 5;... % 8 dunkel vs. kopflow dunkel
+                 %2 6;... % 9 hell vs. kopflos hell
+                 ]; %
 
     % 5.2. Loop the conditions fro pairwise comparisons
     for p = 1:length(contrasts)
@@ -144,6 +150,46 @@ figure;
 
 xlim([GA{1}.freq(1) GA{1}.freq(end)]);
 
+figure; 
+    % Dunkel   
+    loglog(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
+    hold on
+    
+    % Hell
+    loglog(GA{1}.freq,squeeze(mean(GA{2}.powspctrm,1)),'linewidth',3,'color',[0,0,1]);
+    
+    % Mltot
+    loglog(GA{1}.freq,squeeze(mean(GA{4}.powspctrm,1)),'linewidth',3,'color',[0 0 0]);
+    
+    % KL Dunkel
+    loglog(GA{1}.freq,squeeze(mean(GA{5}.powspctrm,1)),'linewidth',3,'color',[1 1 0]);
+    
+    % KL Hell
+    loglog(GA{1}.freq,squeeze(mean(GA{6}.powspctrm,1)),'linewidth',3,'color',[0 1 1]);
+    
+xlim([GA{1}.freq(1) GA{1}.freq(end)]);
+
+figure; 
+    % Hell   
+    loglog(GA{1}.freq,squeeze(mean(GA{2}.powspctrm,1)),'linewidth',3,'color',[0,0,1]);
+    hold on
+    
+    % Kopflos Hell
+    loglog(GA{1}.freq,squeeze(mean(GA{6}.powspctrm,1)),'linewidth',3,'color',[0,0,1],'linestyle','--');
+    
+    % Dunkel   
+    loglog(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
+    hold on
+    
+    % Kopflos Dunkel
+    loglog(GA{1}.freq,squeeze(mean(GA{5}.powspctrm,1)),'linewidth',3,'color',[1,0,0],'linestyle','--');
+       
+    plot(GA{1}.freq,pow_stats{9}.mask,'b*');
+
+xlim([GA{1}.freq(1) GA{1}.freq(end)]);
+legend('Light','Headless light', 'Dark', 'Headless Dark');
+xlabel('log Frequency (Hz)');
+ylabel('log Amplitude');
 
 figure; 
     % Dunkel
