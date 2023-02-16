@@ -23,8 +23,8 @@ inpath{1} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitH
 inpath{2} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/02_Hell/'; 
 inpath{3} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/03_Mllebend/'; 
 inpath{4} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/04_Mltot/'; 
-%inpath{5} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/06_KLDunkel/'; 
-%inpath{6} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/07_KLHell/';
+inpath{5} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/06_KLDunkel/'; 
+inpath{6} = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/07_KLHell/';
 
 outpath = '/Users/juliankeil/Documents/Arbeit/Kiel/Abschlussarbeiten/Lang/GitHub/Planarian/02_data/02_Preproc/101_Output/';
 
@@ -34,7 +34,7 @@ for p = 1:length(inpath)
 end
 
 %% 2. Loop Data to collect single recordings
-cond = cell(1,4);
+cond = cell(1,6);
 for p = 1:length(inpath)
     indat = dir([inpath{p},'*.mat']);
     cond{p} = cell(1,1);
@@ -56,7 +56,7 @@ end
 %% 3. Group Average
 for p = 1:length(cond)
     cfg = [];
-    cfg.keepindividual = 'no';
+    cfg.keepindividual = 'yes';
 
     GA{p} = ft_freqgrandaverage(cfg,cond{p}{:});
 end
@@ -94,9 +94,9 @@ end
                  2 3;... % 4 hell vs mllebend
                  2 4;... % 5 hell vs mltot
                  3 4;...% 6 mllebend vs. mltot
-                 %5 6;... % 7 Kopflos dunkel vs. kopflos hell
-                 %1 5;... % 8 dunkel vs. kopflow dunkel
-                 %2 6;... % 9 hell vs. kopflos hell
+                 5 6;... % 7 Kopflos dunkel vs. kopflos hell
+                 1 5;... % 8 dunkel vs. kopflow dunkel
+                 2 6;... % 9 hell vs. kopflos hell
                  ]; %
 
     % 5.2. Loop the conditions fro pairwise comparisons
@@ -134,106 +134,92 @@ end
     end
 
 %% 6. Plots
+% Figure 2
+figure;
 
-figure; 
-    % Dunkel   
-    loglog(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
-    hold on
-    
-    % Hell
-    loglog(GA{1}.freq,squeeze(mean(GA{2}.powspctrm,1)),'linewidth',3,'color',[0,0,1]);
-    
-    % Mltot
-    loglog(GA{1}.freq,squeeze(mean(GA{4}.powspctrm,1)),'linewidth',3,'color',[0 0 0]);
-    
-    plot(GA{1}.freq,pow_stats{1}.mask,'r*');
+loglog(GA{1}.freq,mean(squeeze(GA{1}.powspctrm)),'linewidth',3,'color',[1,0,0]);
+hold on
+loglog(GA{2}.freq,mean(squeeze(GA{2}.powspctrm)),'linewidth',3,'color',[0,0,1]);
+loglog(GA{4}.freq,mean(squeeze(GA{4}.powspctrm)),'linewidth',3,'color',[0,0,0]);
 
-xlim([GA{1}.freq(1) GA{1}.freq(end)]);
 
-figure; 
-    % Dunkel   
-    loglog(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
-    hold on
-    
-    % Hell
-    loglog(GA{1}.freq,squeeze(mean(GA{2}.powspctrm,1)),'linewidth',3,'color',[0,0,1]);
-    
-    % Mltot
-    loglog(GA{1}.freq,squeeze(mean(GA{4}.powspctrm,1)),'linewidth',3,'color',[0 0 0]);
-    
-    % KL Dunkel
-    loglog(GA{1}.freq,squeeze(mean(GA{5}.powspctrm,1)),'linewidth',3,'color',[1 1 0]);
-    
-    % KL Hell
-    loglog(GA{1}.freq,squeeze(mean(GA{6}.powspctrm,1)),'linewidth',3,'color',[0 1 1]);
-    
-xlim([GA{1}.freq(1) GA{1}.freq(end)]);
+% Dark
+for v = 1:size(GA{1}.powspctrm,1)
+    loglog(GA{1}.freq,squeeze(GA{1}.powspctrm(v,:,:)),'linewidth',1,'color',[1,0.5,0.5]);
+end
 
-figure; 
-    % Hell   
-    loglog(GA{1}.freq,squeeze(mean(GA{2}.powspctrm,1)),'linewidth',3,'color',[0,0,1]);
-    hold on
-    
-    % Kopflos Hell
-    loglog(GA{1}.freq,squeeze(mean(GA{6}.powspctrm,1)),'linewidth',3,'color',[0,0,1],'linestyle','--');
-    
-    % Dunkel   
-    loglog(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
-    hold on
-    
-    % Kopflos Dunkel
-    loglog(GA{1}.freq,squeeze(mean(GA{5}.powspctrm,1)),'linewidth',3,'color',[1,0,0],'linestyle','--');
-       
-    plot(GA{1}.freq,pow_stats{9}.mask,'b*');
+% Light
+for v = 1:size(GA{2}.powspctrm,1)
+    loglog(GA{2}.freq,squeeze(GA{2}.powspctrm(v,:,:)),'linewidth',1,'color',[0.5,0.5,1]);
+end
+
+% MLtot
+for v = [2:5,7:18]%size(GA{4}.powspctrm,1)
+    loglog(GA{4}.freq,squeeze(GA{4}.powspctrm(v,:,:)),'linewidth',1,'color',[0.5,0.5,0.5]);
+end
+
+loglog(GA{1}.freq,mean(squeeze(GA{1}.powspctrm)),'linewidth',3,'color',[1,0,0]);
+loglog(GA{2}.freq,mean(squeeze(GA{2}.powspctrm)),'linewidth',3,'color',[0,0,1]);
+loglog(GA{4}.freq,mean(squeeze(GA{4}.powspctrm)),'linewidth',3,'color',[0,0,0]);
+
+plot(pow_stats{1}.freq,pow_stats{1}.mask.*10^-2.5,'g--','linewidth',3);
 
 xlim([GA{1}.freq(1) GA{1}.freq(end)]);
-legend('Light','Headless light', 'Dark', 'Headless Dark');
+legend('Dark','Light','Larvae');
 xlabel('log Frequency (Hz)');
 ylabel('log Amplitude');
 
-figure; 
-    % Dunkel
-    loglog(GA{1}.freq,squeeze(GA{1}.powspctrm),'linewidth',1,'color',[1,0.5,0.5]);
-    hold on
-    loglog(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
-    
-    % Hell
-    loglog(GA{1}.freq,squeeze(GA{2}.powspctrm),'linewidth',1,'color',[0.5,0.5,1]);
-    hold on
-    loglog(GA{1}.freq,squeeze(mean(GA{2}.powspctrm,1)),'linewidth',3,'color',[0,0,1]);
-    
-    % Mllebend
-    loglog(GA{1}.freq,squeeze(GA{3}.powspctrm),'linewidth',1,'color',[0.5,1,0.5]);
-    hold on
-    loglog(GA{1}.freq,squeeze(mean(GA{3}.powspctrm,1)),'linewidth',3,'color',[0,1,0]);
-    
-    % Mltot
-    loglog(GA{1}.freq,squeeze(GA{4}.powspctrm),'linewidth',1,'color',[0.25,0.25,0.25]);
-    hold on
-    loglog(GA{1}.freq,squeeze(mean(GA{4}.powspctrm,1)),'linewidth',3,'color',[0 0 0]);
-
-xlim([GA{1}.freq(1) GA{1}.freq(end)]);
-
-
-plot(GA{1}.freq,squeeze(GA{1}.powspctrm),'linewidth',1,'color',[1,0.5,0.5]);
-hold on
-plot(GA{1}.freq,squeeze(mean(GA{1}.powspctrm,1)),'linewidth',3,'color',[1,0,0]);
-
+% Figure 3
+% Dark
 figure;
-loglog(light_GA.freq,mean(squeeze(light_GA.powspctrm)),'linewidth',3,'color',[1,0,0]);
+subplot(1,2,1)
+loglog(GA{1}.freq,mean(squeeze(GA{1}.powspctrm)),'linewidth',3,'color',[1,0,0]);
 hold on
-for v = 1:size(light_GA.powspctrm,1)
-    loglog(light_GA.freq,squeeze(light_GA.powspctrm(v,:,:)),'linewidth',1,'color',[1,0.5,0.5]);
+loglog(GA{5}.freq,mean(squeeze(GA{5}.powspctrm)),'linewidth',3,'color',[0,0,1]);
+
+
+% Dark
+for v = 1:size(GA{1}.powspctrm,1)
+    loglog(GA{1}.freq,squeeze(GA{1}.powspctrm(v,:,:)),'linewidth',1,'color',[1,0.5,0.5]);
 end
-loglog(light_GA.freq,mean(squeeze(light_GA.powspctrm)),'linewidth',3,'color',[1,0,0]);
 
-for v = 1:size(dark_GA.powspctrm,1)
-    loglog(dark_GA.freq,squeeze(dark_GA.powspctrm(v,:,:)),'linewidth',1,'color',[0.5,0.5,1]);
+% Dark Decap
+for v = 1:size(GA{5}.powspctrm,1)
+    loglog(GA{5}.freq,squeeze(GA{5}.powspctrm(v,:,:)),'linewidth',1,'color',[0.5,0.5,1]);
 end
 
-loglog(dark_GA.freq,mean(squeeze(dark_GA.powspctrm)),'linewidth',3,'color',[0,0,1]);
-loglog(stats.freq,stats.mask,'k*');
-title(strcat('red =  ', firstn, ', blue =  ', secondn, ', stars = sig. diff'));
+plot(pow_stats{8}.freq,pow_stats{8}.mask.*min(GA{1}.powspctrm(:)),'g--','linewidth',3);
 
-% Test the exponents
-[H,P,CI,STATS] = ttest2(light_exp',dark_exp','vartype','unequal')
+loglog(GA{1}.freq,mean(squeeze(GA{1}.powspctrm)),'linewidth',3,'color',[1,0,0]);
+loglog(GA{5}.freq,mean(squeeze(GA{5}.powspctrm)),'linewidth',3,'color',[0,0,1]);
+xlim([GA{1}.freq(1) GA{1}.freq(end)]);
+legend('Dark intact','Dark decapitated');
+xlabel('log Frequency (Hz)');
+ylabel('log Amplitude');
+
+% Light
+subplot(1,2,2)
+loglog(GA{2}.freq,mean(squeeze(GA{2}.powspctrm)),'linewidth',3,'color',[1,0,0]);
+hold on
+loglog(GA{6}.freq,mean(squeeze(GA{6}.powspctrm)),'linewidth',3,'color',[0,0,1]);
+
+% Dark
+for v = 1:size(GA{2}.powspctrm,1)
+    loglog(GA{2}.freq,squeeze(GA{2}.powspctrm(v,:,:)),'linewidth',1,'color',[1,0.5,0.5]);
+end
+
+% Dark Decap
+for v = 1:size(GA{6}.powspctrm,1)
+    loglog(GA{6}.freq,squeeze(GA{6}.powspctrm(v,:,:)),'linewidth',1,'color',[0.5,0.5,1]);
+end
+
+plot(pow_stats{9}.freq,pow_stats{9}.mask.*min(GA{1}.powspctrm(:)),'g--','linewidth',3);
+
+loglog(GA{2}.freq,mean(squeeze(GA{2}.powspctrm)),'linewidth',3,'color',[1,0,0]);
+loglog(GA{6}.freq,mean(squeeze(GA{6}.powspctrm)),'linewidth',3,'color',[0,0,1]);
+xlim([GA{2}.freq(1) GA{2}.freq(end)]);
+legend('Light intact','Light decapitated');
+xlabel('log Frequency (Hz)');
+ylabel('log Amplitude');
+
+
